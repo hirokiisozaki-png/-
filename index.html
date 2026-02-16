@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGF/AGV 能力計算ツール</title>
+    <style>
+        /* ====== Linear Design System ====== */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8fa;
+            --bg-tertiary: #f0f0f3;
+            --bg-card: #ffffff;
+            --bg-input: #f5f5f7;
+            --bg-hover: #e8e8ee;
+            --border: #d1d1d8;
+            --border-focus: #5e6ad2;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b6b7a;
+            --text-tertiary: #9a9aae;
+            --accent: #5e6ad2;
+            --accent-hover: #4850b8;
+            --accent-subtle: rgba(94, 106, 210, 0.08);
+            --success: #2da770;
+            --success-subtle: rgba(45, 167, 112, 0.08);
+            --warning: #d4900a;
+            --warning-subtle: rgba(212, 144, 10, 0.08);
+            --danger: #cd2b31;
+            --danger-subtle: rgba(205, 43, 49, 0.08);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+            --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* ====== Header ====== */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+        }
+        .header-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: -0.3px;
+        }
+        .header-logo svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--accent);
+        }
+        .header-badge {
+            font-size: 11px;
+            font-weight: 500;
+            background: var(--accent-subtle);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 999px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ====== Tab Navigation ====== */
+        .tab-nav {
+            display: flex;
+            gap: 2px;
+            background: var(--bg-tertiary);
+            padding: 3px;
+            border-radius: var(--radius-md);
+            width: fit-content;
+        }
+        .tab-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--text-primary); }
+        .tab-btn.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* ====== Layout ====== */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .page-title {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .grid-full { grid-column: 1 / -1; }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        /* ====== Card ====== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+        }
+        .card-header-icon.blue { background: var(--accent-subtle); color: var(--accent); }
+        .card-header-icon.green { background: var(--success-subtle); color: var(--success); }
+        .card-header-icon.orange { background: var(--warning-subtle); color: var(--warning); }
+        .card-header-icon.red { background: var(--danger-subtle); color: var(--danger); }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+        .card-body {
+            padding: 16px 18px;
+        }
+
+        /* ====== Form Elements ====== */
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .form-unit {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: var(--font);
+            transition: border-color var(--transition);
+            outline: none;
+        }
+        .form-input:hover { border-color: #3a3a48; }
+        .form-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 1px var(--border-focus); }
+        .form-input::placeholder { color: var(--text-tertiary); }
+
+        .form-input-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* ====== Result Display ====== */
+        .result-grid {
+            display: grid;
+            gap: 1px;
+            background: var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .result-item {
+            background: var(--bg-card);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .result-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .result-value {
+            font-size: 14px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .result-value.highlight {
+            color: var(--accent);
+            font-size: 18px;
+        }
+        .result-value.success { color: var(--success); }
+        .result-value.warning { color: var(--warning); }
+
+        .result-unit {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-left: 4px;
+            font-weight: 400;
+        }
+
+        /* ====== Big Number Display ====== */
+        .big-number-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .big-number {
+            text-align: center;
+            padding: 16px 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+        .big-number-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .big-number-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
+        }
+        .big-number-unit {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+        }
+        .big-number.primary .big-number-value { color: var(--accent); }
+        .big-number.success .big-number-value { color: var(--success); }
+        .big-number.warning .big-number-value { color: var(--warning); }
+
+        /* ====== Route Builder ====== */
+        .route-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .route-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .route-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--accent-subtle);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+        .route-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .route-input {
+            width: 80px;
+        }
+        .route-btn-remove {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-tertiary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all var(--transition);
+        }
+        .route-btn-remove:hover {
+            background: var(--danger-subtle);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn {
+            padding: 7px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: var(--font);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        /* ====== Segment / Curve Input ====== */
+        .segment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .segment-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 12px;
+        }
+        .segment-type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .segment-type.straight {
+            background: var(--success-subtle);
+            color: var(--success);
+        }
+        .segment-type.curve {
+            background: var(--warning-subtle);
+            color: var(--warning);
+        }
+
+        /* ====== Reference Table ====== */
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .ref-table th {
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        .ref-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .ref-table tr:last-child td { border-bottom: none; }
+        .ref-table tr:hover td { background: var(--bg-hover); }
+
+        /* ====== Tooltip ====== */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        .tooltip::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            white-space: nowrap;
+            border: 1px solid var(--border);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--transition);
+            z-index: 10;
+        }
+        .tooltip:hover::after { opacity: 1; }
+
+        /* ====== Separator ====== */
+        .separator {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        /* ====== Scrollbar ====== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+        /* ====== Utilities ====== */
+        .hidden { display: none !important; }
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-24 { margin-top: 24px; }
+        .mb-8 { margin-bottom: 8px; }
+        .text-xs { font-size: 11px; }
+        .text-muted { color: var(--text-secondary); }
+
+        /* ====== Info Banner ====== */
+        .info-banner {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .info-banner.info {
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border: 1px solid rgba(94, 106, 210, 0.2);
+        }
+        .info-banner.warn {
+            background: var(--warning-subtle);
+            color: var(--warning);
+            border: 1px solid rgba(245, 166, 35, 0.2);
+        }
+
+        /* ====== Print ====== */
+        @media print {
+            body { background: white; color: #111; }
+            .header { position: static; background: white; border-bottom: 2px solid #ddd; }
+            .card { border-color: #ddd; page-break-inside: avoid; }
+            .form-input { border-color: #ccc; background: #f9f9f9; }
+            .tab-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <div class="header-logo">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            能力計算ツール
+            <span class="header-badge">v1.0</span>
+        </div>
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchMode('agf')">AGF（フォークリフト）</button>
+            <button class="tab-btn" onclick="switchMode('agv')">AGV（搬送車）</button>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    <h1 class="page-title" id="pageTitle">AGF 能力計算シミュレーター</h1>
+    <p class="page-subtitle">搬送条件を入力するだけで、必要台数をすぐに算出できます。</p>
+
+    <div class="grid">
+        <!-- ===== 左カラム: 入力 ===== -->
+        <div>
+            <!-- 基本搬送条件 -->
+            <div class="card mb-8">
+                <div class="card-header">
+                    <div class="card-header-icon blue">◆</div>
+                    <span class="card-title">基本搬送条件</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">片道距離 <span class="form-unit">m</span></label>
+                            <input type="number" class="form-input" id="oneWayDist" value="50" min="1" step="1" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">往復距離 <span class="form-unit">m（自動計算）</span></label>
+                            <input type="number" class="form-input" id="roundTripDist" value="100" readonly style="opacity:0.6">
+                        </div>
+                    </div>
+                    <!-- 搬送回数入力モード切替 -->
+                    <div class="form-group">
+                        <label class="form-label">搬送回数の入力方式</label>
+                        <div class="tab-nav" style="width:100%;">
+                            <button class="tab-btn active" id="tripModeAuto" onclick="setTripMode('auto')" style="flex:1;text-align:center;">自動計算（日次→時間換算）</button>
+                            <button class="tab-btn" id="tripModeManual" onclick="setTripMode('manual')" style="flex:1;text-align:center;">手動入力（時間あたり直接）</button>
+                        </div>
+                    </div>
+                    <div id="tripAutoSection">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">稼働時間 <span class="form-unit">h/日</span></label>
+                                <input type="number" class="form-input" id="opHours" value="13" min="1" step="0.5" oninput="calculate()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">1日の搬送回数 <span class="form-unit">回/日</span></label>
+                                <input type="number" class="form-input" id="dailyTrips" value="100" min="1" step="1" oninput="calculate()">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">1時間あたりの搬送回数 <span class="form-unit">回/h（自動計算）</span></label>
+                            <input type="number" class="form-input" id="hourlyTrips" value="" readonly style="opacity:0.6">
+                        </div>
+                    </div>
+                    <div id="tripManualSection" class="hidden">
+                        <div class="form-group">
+                            <label class="form-label">1時間あたりの搬送回数 <span class="form-unit">回/h（手動入力）</span></label>
+                            <input type="number" class="form-input" id="hourlyTripsManual" value="10" min="0.1" step="0.1" oninput="calculate()" placeholder="例: 10">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ロボットスペック -->
+            <div class="card mb-8" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon blue">■</div>
+                    <span class="card-title" id="specTitle">AGF スペック・走行条件</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">カタログ最高速度 <span class="form-unit">km/h</span></label>
+                            <input type="number" class="form-input" id="catalogSpeed" value="5" min="0.1" step="0.1" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label tooltip" data-tip="実運用でのカタログ値に対する比率（0.7〜1.0）">実運用係数 <span class="form-unit">（0〜1.0）</span></label>
+                            <input type="number" class="form-input" id="opCoeff" value="0.8" min="0.1" max="1.0" step="0.05" oninput="calculate()">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">片道停止回数 <span class="form-unit">回</span></label>
+                            <input type="number" class="form-input" id="stopCount" value="2" min="0" step="1" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label tooltip" data-tip="減速＋停止＋再加速を含む">1回あたり停止ロス <span class="form-unit">秒</span></label>
+                            <input type="number" class="form-input" id="stopLoss" value="15" min="0" step="1" oninput="calculate()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label tooltip" data-tip="目安: 人少なめ10〜15% / 人共存20〜30% / 混雑多い30〜40%">徐行・減速ロス率 <span class="form-unit">%</span></label>
+                        <input type="number" class="form-input" id="slowdownRate" value="25" min="0" max="100" step="1" oninput="calculate()">
+                        <div class="info-banner info mt-8">
+                            <span>💡</span>
+                            <span>人少なめ: 10〜15% ／ 人共存: 20〜30% ／ 混雑多い: 30〜40%<br>提案初期: 25% ／ 安全側: 30〜35%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGF専用: リフト動作 -->
+            <div class="card mb-8" id="liftSection" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon orange">⬆</div>
+                    <span class="card-title">リフト動作（AGF専用）</span>
+                </div>
+                <div class="card-body">
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label class="form-label">上昇時間 <span class="form-unit">秒/回</span></label>
+                            <input type="number" class="form-input" id="liftUp" value="30" min="0" step="1" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">下降時間 <span class="form-unit">秒/回</span></label>
+                            <input type="number" class="form-input" id="liftDown" value="30" min="0" step="1" oninput="calculate()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">往復動作回数 <span class="form-unit">set</span></label>
+                            <input type="number" class="form-input" id="liftCycles" value="1" min="0" step="1" oninput="calculate()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 走行経路詳細 -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon green">🛤</div>
+                    <span class="card-title">走行経路詳細（直進・カーブ）</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-banner warn mb-8">
+                        <span>⚠️</span>
+                        <span>直進とカーブを分けて入力すると、より実際に近い平均速度が算出されます。未入力の場合は片道距離が直進として使用されます。</span>
+                    </div>
+                    <div class="segment-list" id="segmentList">
+                        <!-- Dynamic segments -->
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button class="btn btn-ghost" onclick="addSegment('straight')">＋ 直進区間を追加</button>
+                        <button class="btn btn-ghost" onclick="addSegment('curve')">＋ カーブ区間を追加</button>
+                    </div>
+                    <div class="form-group mt-12">
+                        <label class="form-label">カーブ時の速度低下率 <span class="form-unit">%（カタログ速度に対して）</span></label>
+                        <input type="number" class="form-input" id="curveSpeedRate" value="50" min="10" max="100" step="5" oninput="calculate()">
+                    </div>
+                    <div class="form-group mt-8" id="segmentSummary" style="display:none;">
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="result-label">経路合計距離</span>
+                                <span class="result-value" id="segTotalDist">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">経路ベース平均速度</span>
+                                <span class="result-value" id="segAvgSpeed">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 右カラム: 結果 ===== -->
+        <div>
+            <!-- 計算結果 -->
+            <div class="card mb-8">
+                <div class="card-header">
+                    <div class="card-header-icon green">■</div>
+                    <span class="card-title">計算結果</span>
+                </div>
+                <div class="card-body">
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <span class="result-label">往復距離</span>
+                            <span class="result-value"><span id="resRoundTrip">100</span><span class="result-unit">m</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">平均最高速度</span>
+                            <span class="result-value"><span id="resMaxSpeed">4.00</span><span class="result-unit">km/h</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">理論往復走行時間</span>
+                            <span class="result-value"><span id="resTheoTime">1.50</span><span class="result-unit">分</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">走行停止ロス時間</span>
+                            <span class="result-value"><span id="resStopLoss">1.00</span><span class="result-unit">分</span></span>
+                        </div>
+                        <div class="result-item" id="resLiftRow">
+                            <span class="result-label">リフト動作ロス時間</span>
+                            <span class="result-value"><span id="resLiftLoss">1.00</span><span class="result-unit">分</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">徐行・減速ロス時間</span>
+                            <span class="result-value"><span id="resSlowLoss">0.38</span><span class="result-unit">分</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">往復所要時間</span>
+                            <span class="result-value highlight"><span id="resRoundTime">3.88</span><span class="result-unit">分/回</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">平均速度</span>
+                            <span class="result-value"><span id="resAvgSpeedKm">1.55</span><span class="result-unit">km/h</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">平均速度</span>
+                            <span class="result-value"><span id="resAvgSpeedM">25.81</span><span class="result-unit">m/min</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">処理能力</span>
+                            <span class="result-value highlight"><span id="resCapacity">15.48</span><span class="result-unit">往復/時</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 必要台数 -->
+            <div class="card mb-8" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon red">★</div>
+                    <span class="card-title">必要台数</span>
+                </div>
+                <div class="card-body">
+                    <div class="result-grid mb-8">
+                        <div class="result-item">
+                            <span class="result-label">必要処理能力（1hあたりの希望搬送回数）</span>
+                            <span class="result-value"><span id="resRequiredCap">7.69</span><span class="result-unit">回/h</span></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label" id="resRobotCapLabel">AGF処理能力</span>
+                            <span class="result-value success"><span id="resRobotCap">15.48</span><span class="result-unit">回/h</span></span>
+                        </div>
+                    </div>
+
+                    <div class="big-number-grid mt-16">
+                        <div class="big-number primary">
+                            <div class="big-number-label">標準 (×1.1)</div>
+                            <div class="big-number-value" id="resUnitsStd">1</div>
+                            <div class="big-number-unit">台</div>
+                        </div>
+                        <div class="big-number warning">
+                            <div class="big-number-label">人混在 (×1.2)</div>
+                            <div class="big-number-value" id="resUnitsMixed">1</div>
+                            <div class="big-number-unit">台</div>
+                        </div>
+                        <div class="big-number success">
+                            <div class="big-number-label">将来増設 (×1.3)</div>
+                            <div class="big-number-value" id="resUnitsFuture">1</div>
+                            <div class="big-number-unit">台</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-16">
+                        <label class="form-label">カスタム余裕率 <span class="form-unit">（任意入力）</span></label>
+                        <div class="form-row">
+                            <input type="number" class="form-input" id="customMargin" value="" placeholder="例: 1.15" min="1.0" max="3.0" step="0.05" oninput="calculate()">
+                            <div style="display:flex;align-items:center;">
+                                <span class="result-value highlight" id="resUnitsCustom" style="min-width:40px;">-</span>
+                                <span class="result-unit">台</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 余裕率 参考テーブル -->
+            <div class="card mb-8" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon orange">📋</div>
+                    <span class="card-title">余裕率 参考目安</span>
+                </div>
+                <div class="card-body">
+                    <table class="ref-table">
+                        <thead>
+                            <tr><th>現場条件</th><th>余裕率</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>無人・直線中心</td><td>×1.05</td></tr>
+                            <tr><td>一般工場</td><td>×1.10</td></tr>
+                            <tr><td>人混在・交差多</td><td>×1.20</td></tr>
+                            <tr><td>不確定要素多</td><td>×1.30</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="info-banner warn mt-12">
+                        <span>⚠️</span>
+                        <span>処理能力はあくまで平均値からの算出です。現場では様々なトラブルがあり、平均値のみでは破綻しやすいため、余裕率を適切に設定してください。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 複数地点搬送 -->
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <div class="card-header-icon blue">📍</div>
+                    <span class="card-title">複数地点搬送（平均距離算出）</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-banner info mb-8">
+                        <span>💡</span>
+                        <span>ピックアップ箇所や降ろす場所が複数ある場合、各ルートの距離を入力すると平均移動距離と必要台数を算出します。</span>
+                    </div>
+                    <div class="route-list" id="routeList">
+                        <!-- Dynamic routes -->
+                    </div>
+                    <button class="btn btn-ghost mt-8" onclick="addRoute()">＋ ルートを追加</button>
+
+                    <div id="multiRouteResult" style="display:none;" class="mt-16">
+                        <div class="separator"></div>
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="result-label">平均片道距離</span>
+                                <span class="result-value"><span id="resAvgDist">-</span><span class="result-unit">m</span></span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">平均往復所要時間</span>
+                                <span class="result-value"><span id="resAvgRoundTime">-</span><span class="result-unit">分/回</span></span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">平均処理能力</span>
+                                <span class="result-value success"><span id="resAvgCapacity">-</span><span class="result-unit">往復/時</span></span>
+                            </div>
+                        </div>
+
+                        <div class="big-number-grid mt-12">
+                            <div class="big-number primary">
+                                <div class="big-number-label">標準 (×1.1)</div>
+                                <div class="big-number-value" id="resMultiStd">-</div>
+                                <div class="big-number-unit">台</div>
+                            </div>
+                            <div class="big-number warning">
+                                <div class="big-number-label">人混在 (×1.2)</div>
+                                <div class="big-number-value" id="resMultiMixed">-</div>
+                                <div class="big-number-unit">台</div>
+                            </div>
+                            <div class="big-number success">
+                                <div class="big-number-label">将来増設 (×1.3)</div>
+                                <div class="big-number-value" id="resMultiFuture">-</div>
+                                <div class="big-number-unit">台</div>
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="result-label">平均往復所要時間（ロス込み）</span>
+                                <span class="result-value"><span id="resAvgTimeMin">-</span><span class="result-unit">分</span></span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">平均往復所要時間（ロス込み）</span>
+                                <span class="result-value"><span id="resAvgTimeHour">-</span><span class="result-unit">時間</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ====== State ======
+    let currentMode = 'agf'; // 'agf' or 'agv'
+    let segments = []; // { type: 'straight'|'curve', distance: number }
+    let routes = []; // { name: string, distance: number }
+    let routeCounter = 0;
+    let tripMode = 'auto'; // 'auto' or 'manual'
+
+    // ====== Trip Mode Switch ======
+    function setTripMode(mode) {
+        tripMode = mode;
+        document.getElementById('tripModeAuto').classList.toggle('active', mode === 'auto');
+        document.getElementById('tripModeManual').classList.toggle('active', mode === 'manual');
+        document.getElementById('tripAutoSection').classList.toggle('hidden', mode !== 'auto');
+        document.getElementById('tripManualSection').classList.toggle('hidden', mode !== 'manual');
+        calculate();
+    }
+
+    // ====== Mode Switch ======
+    function switchMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        const isAGF = mode === 'agf';
+        document.getElementById('pageTitle').textContent = isAGF
+            ? 'AGF 能力計算シミュレーター'
+            : 'AGV 能力計算シミュレーター';
+        document.getElementById('specTitle').textContent = isAGF
+            ? 'AGF スペック・走行条件'
+            : 'AGV スペック・走行条件';
+        document.getElementById('liftSection').classList.toggle('hidden', !isAGF);
+        document.getElementById('resLiftRow').classList.toggle('hidden', !isAGF);
+        document.getElementById('resRobotCapLabel').textContent = isAGF ? 'AGF処理能力' : 'AGV処理能力';
+
+        // Default values per mode
+        if (isAGF) {
+            document.getElementById('catalogSpeed').value = 5;
+            document.getElementById('opCoeff').value = 0.8;
+        } else {
+            document.getElementById('catalogSpeed').value = 3;
+            document.getElementById('opCoeff').value = 0.9;
+        }
+        calculate();
+    }
+
+    // ====== Segments ======
+    function addSegment(type) {
+        segments.push({ type, distance: type === 'straight' ? 20 : 5 });
+        renderSegments();
+        calculate();
+    }
+
+    function removeSegment(idx) {
+        segments.splice(idx, 1);
+        renderSegments();
+        calculate();
+    }
+
+    function updateSegment(idx, val) {
+        segments[idx].distance = parseFloat(val) || 0;
+        calculate();
+    }
+
+    function renderSegments() {
+        const list = document.getElementById('segmentList');
+        if (segments.length === 0) {
+            list.innerHTML = '<div class="text-xs text-muted" style="padding:8px 0;">経路区間が未入力です。片道距離がそのまま使用されます。</div>';
+            document.getElementById('segmentSummary').style.display = 'none';
+            return;
+        }
+        document.getElementById('segmentSummary').style.display = 'block';
+        list.innerHTML = segments.map((s, i) => `
+            <div class="segment-item">
+                <span class="segment-type ${s.type}">${s.type === 'straight' ? '直進' : 'カーブ'}</span>
+                <span style="font-size:12px;">区間 ${i + 1}</span>
+                <input type="number" class="form-input form-input-sm route-input"
+                    value="${s.distance}" min="0" step="1"
+                    oninput="updateSegment(${i}, this.value)">
+                <span class="form-unit">m</span>
+                <button class="route-btn-remove" onclick="removeSegment(${i})">×</button>
+            </div>
+        `).join('');
+    }
+
+    // ====== Routes ======
+    function addRoute() {
+        routeCounter++;
+        routes.push({ name: `ルート ${routeCounter}`, distance: 50 });
+        renderRoutes();
+        calculate();
+    }
+
+    function removeRoute(idx) {
+        routes.splice(idx, 1);
+        renderRoutes();
+        calculate();
+    }
+
+    function updateRouteDist(idx, val) {
+        routes[idx].distance = parseFloat(val) || 0;
+        calculate();
+    }
+
+    function updateRouteName(idx, val) {
+        routes[idx].name = val;
+    }
+
+    function renderRoutes() {
+        const list = document.getElementById('routeList');
+        if (routes.length === 0) {
+            list.innerHTML = '<div class="text-xs text-muted" style="padding:8px 0;">ルートが未登録です。上の基本搬送条件の計算のみ表示されます。</div>';
+            document.getElementById('multiRouteResult').style.display = 'none';
+            return;
+        }
+        document.getElementById('multiRouteResult').style.display = 'block';
+        list.innerHTML = routes.map((r, i) => `
+            <div class="route-item">
+                <span class="route-badge">R${i + 1}</span>
+                <input type="text" class="form-input form-input-sm" value="${r.name}"
+                    onchange="updateRouteName(${i}, this.value)" style="max-width:140px;">
+                <input type="number" class="form-input form-input-sm route-input"
+                    value="${r.distance}" min="0" step="1"
+                    oninput="updateRouteDist(${i}, this.value)">
+                <span class="form-unit">m（片道）</span>
+                <button class="route-btn-remove" onclick="removeRoute(${i})">×</button>
+            </div>
+        `).join('');
+    }
+
+    // ====== Core Calculation ======
+    function calculate() {
+        const isAGF = currentMode === 'agf';
+
+        // --- Basic Inputs ---
+        const oneWayDist = parseFloat(document.getElementById('oneWayDist').value) || 0;
+        const opHours = parseFloat(document.getElementById('opHours').value) || 1;
+        const dailyTrips = parseFloat(document.getElementById('dailyTrips').value) || 0;
+        const catalogSpeed = parseFloat(document.getElementById('catalogSpeed').value) || 1;
+        const opCoeff = parseFloat(document.getElementById('opCoeff').value) || 1;
+        const stopCount = parseFloat(document.getElementById('stopCount').value) || 0;
+        const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
+        const slowdownRate = parseFloat(document.getElementById('slowdownRate').value) || 0;
+
+        // AGF-specific
+        const liftUp = isAGF ? (parseFloat(document.getElementById('liftUp').value) || 0) : 0;
+        const liftDown = isAGF ? (parseFloat(document.getElementById('liftDown').value) || 0) : 0;
+        const liftCycles = isAGF ? (parseFloat(document.getElementById('liftCycles').value) || 0) : 0;
+
+        // --- Derived ---
+        const roundTrip = oneWayDist * 2;
+        let hourlyTrips;
+        if (tripMode === 'auto') {
+            hourlyTrips = dailyTrips / opHours;
+            document.getElementById('hourlyTrips').value = hourlyTrips.toFixed(2);
+        } else {
+            hourlyTrips = parseFloat(document.getElementById('hourlyTripsManual').value) || 0;
+        }
+        const maxSpeed = catalogSpeed * opCoeff; // km/h
+
+        document.getElementById('roundTripDist').value = roundTrip;
+
+        // --- Segment-based speed calculation ---
+        let effectiveMaxSpeedKmh = maxSpeed;
+        if (segments.length > 0) {
+            const curveSpeedRate = (parseFloat(document.getElementById('curveSpeedRate').value) || 50) / 100;
+            const straightSpeed = maxSpeed; // km/h
+            const curveSpeed = maxSpeed * curveSpeedRate;
+
+            let totalDist = 0;
+            let totalTime = 0; // hours
+            segments.forEach(s => {
+                totalDist += s.distance;
+                if (s.type === 'straight') {
+                    totalTime += (s.distance / 1000) / straightSpeed; // hours
+                } else {
+                    totalTime += (s.distance / 1000) / curveSpeed; // hours
+                }
+            });
+
+            if (totalTime > 0 && totalDist > 0) {
+                effectiveMaxSpeedKmh = (totalDist / 1000) / totalTime; // km/h
+                document.getElementById('segTotalDist').innerHTML = totalDist.toFixed(1) + '<span class="result-unit">m</span>';
+                document.getElementById('segAvgSpeed').innerHTML = effectiveMaxSpeedKmh.toFixed(2) + '<span class="result-unit">km/h</span>';
+            }
+        }
+
+        // --- Core Formulas (matching Excel) ---
+        // 往復距離
+        const G15 = roundTrip;
+        // 理論往復走行時間 (分) = 往復距離 / (最高速度*1000) * 60
+        const G16 = G15 / (effectiveMaxSpeedKmh * 1000) * 60;
+        // 走行停止ロス時間 (分) = 片道停止回数 * 2 * 停止ロス秒 / 60
+        const G17 = stopCount * 2 * stopLoss / 60;
+        // リフト動作ロス時間 (分) = (上昇+下降) * 回数 / 60
+        const G18 = isAGF ? (liftUp + liftDown) * liftCycles / 60 : 0;
+        // 徐行・減速ロス時間 (分) = 理論往復走行時間 * (ロス率/100)
+        const G19 = G16 * (slowdownRate / 100);
+        // 往復所要時間 (分/回) = 理論走行 + 停止ロス + リフトロス + 徐行ロス
+        const G20 = G16 + G17 + G18 + G19;
+        // 平均速度 (km/h)
+        const G21 = G15 / (G20 / 60) / 1000;
+        // 平均速度 (m/min)
+        const G22 = G21 * 1000 / 60;
+        // 処理能力 (往復/時)
+        const G23 = 60 / G20;
+
+        // 必要台数
+        const requiredCap = hourlyTrips;
+        const robotCap = G23;
+        const unitsStd = Math.ceil(requiredCap / robotCap * 1.1);
+        const unitsMixed = Math.ceil(requiredCap / robotCap * 1.2);
+        const unitsFuture = Math.ceil(requiredCap / robotCap * 1.3);
+
+        // Custom margin
+        const customMarginVal = parseFloat(document.getElementById('customMargin').value);
+        const unitsCustom = customMarginVal ? Math.ceil(requiredCap / robotCap * customMarginVal) : null;
+
+        // --- Update DOM ---
+        document.getElementById('resRoundTrip').textContent = roundTrip.toFixed(0);
+        document.getElementById('resMaxSpeed').textContent = effectiveMaxSpeedKmh.toFixed(2);
+        document.getElementById('resTheoTime').textContent = G16.toFixed(2);
+        document.getElementById('resStopLoss').textContent = G17.toFixed(2);
+        if (isAGF) document.getElementById('resLiftLoss').textContent = G18.toFixed(2);
+        document.getElementById('resSlowLoss').textContent = G19.toFixed(2);
+        document.getElementById('resRoundTime').textContent = G20.toFixed(2);
+        document.getElementById('resAvgSpeedKm').textContent = G21.toFixed(2);
+        document.getElementById('resAvgSpeedM').textContent = G22.toFixed(2);
+        document.getElementById('resCapacity').textContent = G23.toFixed(2);
+        document.getElementById('resRequiredCap').textContent = requiredCap.toFixed(2);
+        document.getElementById('resRobotCap').textContent = robotCap.toFixed(2);
+        document.getElementById('resUnitsStd').textContent = Math.max(unitsStd, 1);
+        document.getElementById('resUnitsMixed').textContent = Math.max(unitsMixed, 1);
+        document.getElementById('resUnitsFuture').textContent = Math.max(unitsFuture, 1);
+        document.getElementById('resUnitsCustom').textContent = unitsCustom !== null ? Math.max(unitsCustom, 1) : '-';
+
+        // --- Multi-route calculation ---
+        if (routes.length > 0) {
+            const validRoutes = routes.filter(r => r.distance > 0);
+            if (validRoutes.length > 0) {
+                const avgDist = validRoutes.reduce((sum, r) => sum + r.distance, 0) / validRoutes.length;
+                const avgRoundTrip = avgDist * 2;
+
+                // Recalculate with average distance
+                const avgG16 = avgRoundTrip / (effectiveMaxSpeedKmh * 1000) * 60;
+                const avgG17 = stopCount * 2 * stopLoss / 60;
+                const avgG18 = isAGF ? (liftUp + liftDown) * liftCycles / 60 : 0;
+                const avgG19 = avgG16 * (slowdownRate / 100);
+                const avgG20 = avgG16 + avgG17 + avgG18 + avgG19;
+                const avgCap = 60 / avgG20;
+
+                const multiStd = Math.ceil(requiredCap / avgCap * 1.1);
+                const multiMixed = Math.ceil(requiredCap / avgCap * 1.2);
+                const multiFuture = Math.ceil(requiredCap / avgCap * 1.3);
+
+                document.getElementById('resAvgDist').textContent = avgDist.toFixed(1);
+                document.getElementById('resAvgRoundTime').textContent = avgG20.toFixed(2);
+                document.getElementById('resAvgCapacity').textContent = avgCap.toFixed(2);
+                document.getElementById('resMultiStd').textContent = Math.max(multiStd, 1);
+                document.getElementById('resMultiMixed').textContent = Math.max(multiMixed, 1);
+                document.getElementById('resMultiFuture').textContent = Math.max(multiFuture, 1);
+                document.getElementById('resAvgTimeMin').textContent = avgG20.toFixed(2);
+                document.getElementById('resAvgTimeHour').textContent = (avgG20 / 60).toFixed(4);
+            }
+        }
+    }
+
+    // ====== Init ======
+    renderSegments();
+    renderRoutes();
+    calculate();
+</script>
+
+</body>
+</html>
