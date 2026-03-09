@@ -1206,7 +1206,7 @@
         btn.disabled = true;
         btn.textContent = '⏳ 生成中…';
 
-        // --- データ収集 ---
+        // --- データ収集（.form-group と .result-item） ---
         function collectInputs(sectionId) {
             var section = document.getElementById(sectionId);
             if (!section) return [];
@@ -1231,11 +1231,36 @@
             return pairs;
         }
 
+        // --- 必要台数データを個別収集 ---
+        function collectUnits() {
+            var items = [];
+            // 必要処理能力・AGF処理能力
+            var reqCap = document.getElementById('resRequiredCap');
+            if (reqCap) items.push({ label: '必要処理能力（1hあたりの希望搬送回数）', value: reqCap.textContent + ' 回/h' });
+            var robCap = document.getElementById('resRobotCap');
+            if (robCap) items.push({ label: document.getElementById('resRobotCapLabel') ? document.getElementById('resRobotCapLabel').textContent : 'AGF処理能力', value: robCap.textContent + ' 回/h' });
+            // 必要台数（big-number カード）
+            var std = document.getElementById('resUnitsStd');
+            if (std) items.push({ label: '標準 (×1.1)', value: std.textContent + ' 台', big: true, color: '#5e6ad2' });
+            var mixed = document.getElementById('resUnitsMixed');
+            if (mixed) items.push({ label: '人混在 (×1.2)', value: mixed.textContent + ' 台', big: true, color: '#e89a3c' });
+            var future = document.getElementById('resUnitsFuture');
+            if (future) items.push({ label: '将来増設 (×1.3)', value: future.textContent + ' 台', big: true, color: '#3ba676' });
+            // カスタム余裕率
+            var custom = document.getElementById('resUnitsCustom');
+            var customInput = document.getElementById('customMargin');
+            if (custom && custom.textContent !== '-' && customInput && customInput.value) {
+                items.push({ label: 'カスタム (×' + customInput.value + ')', value: custom.textContent + ' 台', big: true, color: '#8b5cf6' });
+            }
+            return items;
+        }
+
         var sections = [
             { title: '基本搬送条件', data: collectInputs('section-basic') },
             { title: 'AGF スペック・走行条件', data: collectInputs('section-spec') },
             { title: '計算結果', data: collectInputs('section-result') }
         ];
+        var unitsData = collectUnits();
         var pageTitle = document.getElementById('pageTitle').textContent;
         var now = new Date().toLocaleString('ja-JP');
 
@@ -1280,6 +1305,21 @@
             ctx.closePath();
         }
 
+        // 角丸四辺ヘルパー
+        function roundRect(x, ry, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, ry);
+            ctx.lineTo(x + w - r, ry);
+            ctx.quadraticCurveTo(x + w, ry, x + w, ry + r);
+            ctx.lineTo(x + w, ry + h - r);
+            ctx.quadraticCurveTo(x + w, ry + h, x + w - r, ry + h);
+            ctx.lineTo(x + r, ry + h);
+            ctx.quadraticCurveTo(x, ry + h, x, ry + h - r);
+            ctx.lineTo(x, ry + r);
+            ctx.quadraticCurveTo(x, ry, x + r, ry);
+            ctx.closePath();
+        }
+
         // --- タイトル ---
         ctx.textBaseline = 'top';
         ctx.font = 'bold 18px ' + FF;
@@ -1292,7 +1332,7 @@
         ctx.fillText('能力計算ツール 出力帳票', ML, y);
         y += 24;
 
-        // --- 各セクション ---
+        // --- 各セクション（テーブル形式） ---
         sections.forEach(function(sec) {
             if (sec.data.length === 0) return;
 
@@ -1328,13 +1368,10 @@
 
             // データ行
             sec.data.forEach(function(row, i) {
-                // 偶数行に背景色
                 if (i % 2 === 0) {
                     ctx.fillStyle = '#f8f8fa';
                     ctx.fillRect(ML, y, CW, ROW_H);
                 }
-
-                // ラベル
                 ctx.font = '9px ' + FF;
                 ctx.fillStyle = '#4a4a5a';
                 ctx.textAlign = 'left';
@@ -1342,7 +1379,6 @@
                 var lbl = row.label.length > 40 ? row.label.substring(0, 40) + '…' : row.label;
                 ctx.fillText(lbl, ML + 10, y + ROW_H / 2);
 
-                // 値
                 ctx.font = 'bold 10px ' + FF;
                 ctx.fillStyle = '#1a1a1a';
                 ctx.textAlign = 'right';
@@ -1350,8 +1386,6 @@
                 ctx.textAlign = 'left';
 
                 y += ROW_H;
-
-                // 行区切り線
                 ctx.strokeStyle = '#e8e8ec';
                 ctx.lineWidth = 0.3;
                 ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + CW, y); ctx.stroke();
@@ -1366,6 +1400,109 @@
 
             y += 22;
         });
+
+        // --- ★ 必要台数セクション ---
+        if (unitsData.length > 0) {
+            var HDR_H = 24;
+
+            // セクションヘッダー（赤系）
+            ctx.fillStyle = '#d94f4f';
+            topRoundRect(ML, y, CW, HDR_H, 5);
+            ctx.fill();
+            ctx.font = 'bold 11px ' + FF;
+            ctx.fillStyle = '#ffffff';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★ 必要台数', ML + 12, y + HDR_H / 2);
+            y += HDR_H + 6;
+
+            // 通常行（必要処理能力・AGF処理能力）
+            var normalRows = unitsData.filter(function(d) { return !d.big; });
+            var bigCards = unitsData.filter(function(d) { return d.big; });
+
+            normalRows.forEach(function(row, i) {
+                var ROW_H = 20;
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#f8f8fa';
+                    ctx.fillRect(ML, y, CW, ROW_H);
+                }
+                ctx.font = '9px ' + FF;
+                ctx.fillStyle = '#4a4a5a';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(row.label, ML + 10, y + ROW_H / 2);
+
+                ctx.font = 'bold 10px ' + FF;
+                ctx.fillStyle = '#1a1a1a';
+                ctx.textAlign = 'right';
+                ctx.fillText(row.value, ML + CW - 10, y + ROW_H / 2);
+                ctx.textAlign = 'left';
+
+                y += ROW_H;
+                ctx.strokeStyle = '#e8e8ec';
+                ctx.lineWidth = 0.3;
+                ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(ML + CW, y); ctx.stroke();
+            });
+
+            y += 10;
+
+            // 台数カード（big-number 風に横並び）
+            if (bigCards.length > 0) {
+                var gap = 10;
+                var cardW = (CW - gap * (bigCards.length - 1)) / bigCards.length;
+                var cardH = 60;
+
+                bigCards.forEach(function(card, i) {
+                    var cx = ML + i * (cardW + gap);
+
+                    // カード背景（淡い色）
+                    ctx.fillStyle = '#f8f8fa';
+                    roundRect(cx, y, cardW, cardH, 6);
+                    ctx.fill();
+
+                    // 上部カラーバー
+                    ctx.fillStyle = card.color;
+                    ctx.fillRect(cx, y, cardW, 4);
+                    // 角丸の上部を再描画
+                    roundRect(cx, y, cardW, 4, 6);
+                    ctx.save();
+                    ctx.clip();
+                    ctx.fillStyle = card.color;
+                    ctx.fillRect(cx, y, cardW, 8);
+                    ctx.restore();
+
+                    // カード枠線
+                    ctx.strokeStyle = '#e0e0e5';
+                    ctx.lineWidth = 0.5;
+                    roundRect(cx, y, cardW, cardH, 6);
+                    ctx.stroke();
+
+                    // ラベル
+                    ctx.font = '8px ' + FF;
+                    ctx.fillStyle = '#6b6b7a';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(card.label, cx + cardW / 2, y + 10);
+
+                    // 数値（大きく）
+                    var numOnly = card.value.replace(/[^0-9]/g, '');
+                    ctx.font = 'bold 24px ' + FF;
+                    ctx.fillStyle = card.color;
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(numOnly, cx + cardW / 2, y + 22);
+
+                    // 単位
+                    ctx.font = '9px ' + FF;
+                    ctx.fillStyle = '#6b6b7a';
+                    ctx.fillText('台', cx + cardW / 2, y + 48);
+
+                    ctx.textAlign = 'left';
+                });
+
+                y += cardH + 12;
+            }
+
+            y += 8;
+        }
 
         // --- フッター ---
         ctx.font = '8px ' + FF;
